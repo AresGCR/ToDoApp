@@ -55,7 +55,13 @@ export const todoSlice = createSlice({
           if (todo.id === action.payload.id) {
             todo.status = action.payload.status;
             todo.title = action.payload.title;
-            todo.dueDate = formatDate(action.payload.dueDate);
+            if (todo.status === 'complete') {
+              todo.dueDate = '';
+              todo.priority = '';
+            } else {
+              todo.dueDate = formatDate(action.payload.dueDate);
+              todo.priority = action.payload.priority;
+            }
           }
         });
         window.localStorage.setItem('todoList', JSON.stringify(todoListArr));

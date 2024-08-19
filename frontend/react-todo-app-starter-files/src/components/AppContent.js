@@ -2,25 +2,35 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import TodoItem from './TodoItem';
 import styles from '../styles/modules/app.module.scss';
-
-function AppContent() {
-  const todoList = useSelector((state) => state.todo.todoList);
+const sortByPriority = (todoList) => {
+  const priorityOrder = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+  return [...todoList].sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority]);
+};
+function AppContent({ todos }) { // Accept todos prop
+  let filteredTodoList = todos;
+  
   const filterStatus = useSelector((state) => state.todo.filterStatus);
-  const filterPriority = useSelector((state) => state.todo.filterPriority);
-  const sortedTodoList = [...todoList];
-  sortedTodoList.sort((a, b) => new Date(b.time) - new Date(a.time));
-  const filteredTodoList = sortedTodoList.filter((item) => {
-    if (filterStatus === 'all') {
-      return true;
-    }
-    return item.status === filterStatus;
-  });
+
+  if (filterStatus === 'priority') {
+    // Sort tasks by priority if filter status is 'Priority'
+    filteredTodoList = sortByPriority(filteredTodoList);
+  } else {
+    // Filter tasks by status
+    filteredTodoList = filteredTodoList.filter((item) => {
+      if (filterStatus === 'all') {
+        return true;
+      }
+      return item.status === filterStatus;
+    });
+  }
+
   return (
     <div className={styles.content__wrapper}>
       {filteredTodoList && filteredTodoList.length > 0
-        ? filteredTodoList.map((todo) => <TodoItem todo={todo} />)
-        : 'no task found'}
+        ? filteredTodoList.map((todo) => <TodoItem key={todo.id} todo={todo} />)
+        : 'No tasks found'}
     </div>
   );
 }
+
 export default AppContent;

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { MdOutlineClose } from 'react-icons/md';
 import { useDispatch } from 'react-redux';
 import { v4 as uuid } from 'uuid';
@@ -6,13 +7,15 @@ import toast from 'react-hot-toast';
 import styles from '../styles/modules/modal.module.scss';
 import Button from './Button';
 import { addTodo, updateTodo } from '../slices/todoSlices';
-
+import { addTodo as apiAdd } from '../api/AddTodo';
+import { updateTodo as apiUpdate } from '../api/UpdateTodo';
+const API_URL = `${process.env.REACT_APP_API_URL}/api/v1/tasks`;
 function TodoModal({ type, modalOpen, setModalOpen, todo }) {
   const dispatch = useDispatch();
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState('incomplete');
   const [dueDate, setDueDate] = useState('');
-
+  const [priority, setPriority]=useState('');
   useEffect(() => {
     if (type === 'update' && todo) {
       setTitle(todo.title);
@@ -29,7 +32,19 @@ function TodoModal({ type, modalOpen, setModalOpen, todo }) {
     const year = d.getFullYear();
     return `${day}-${month}-${year}`;
   };
-  const handleSubmit = (e) => {
+  const generateNumericId = () => {
+    // Generate a random number between 1 and 9999 (adjust range as needed)
+    return Math.floor(Math.random() * 9999) + 1;
+  };
+  const newTodo = {
+    id: uuid(),
+    title,
+    status,
+    time: new Date().toISOString().split('T')[0],
+    dueDate: formatDate(dueDate),
+    priority: priority || 'MEDIUM', // Use single quotes
+  };
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (title === '') {
       toast.error('Please enter a title');
@@ -37,25 +52,46 @@ function TodoModal({ type, modalOpen, setModalOpen, todo }) {
     }
     if (title && status) {
       if (type === 'add') {
-        dispatch(
-          addTodo({
-            id: uuid(),
-            title,
-            status,
-            time: new Date().toISOString().split('T')[0],
-            dueDate: formatDate(dueDate),
-          })
-        );
-        toast.success('Task added successfully');
-      }
+        const newTodo = {
+            id: generateNumericId(), // Integer ID based on the current timestamp
+            text: title, // Change "title" to "text"
+            dueDate: formatDate(dueDate), // Formatted due date
+            status, // Use the selected status
+            doneDate: '', // Set doneDate to an empty string initially
+            priority, // Use the selected priority
+            creationDate: new Date().toISOString().split('T')[0], // Creation date in "YYYY-MM-DD" format
+          };
+         dispatch(addTodo(newTodo));
+        await apiAdd(newTodo);
+    }
       if (type === 'update') {
         if (
           todo.title !== title ||
           todo.status !== status ||
-          todo.dueDate !== dueDate
+          todo.dueDate !== dueDate ||
+          todo.priority != priority
         ) {
-          dispatch(updateTodo({ ...todo, title, status, dueDate }));
-          toast.success('Task Updated successfully');
+          // call to backend axios or fetch
+      
+          dispatch(updateTodo({ ...todo, title, status,dueDate,priority}));
+          const updatedTodo = {
+            ...todo,
+            text: title,
+            status,
+            dueDate: formatDate(dueDate),
+            priority,
+          };
+          //await apiUpdate(updatedTodo); 
+          try {
+           
+           const response = await axios.put(`${API_URL}`, updatedTodo);
+            
+            console.log('Todo updated successfully:', response.data);
+            return response.data;  
+          } catch (error) {
+            console.error('There was an error updating the todo:', error);
+            throw error; // Rethrow the error to handle it in the calling function
+          }
         } else {
           toast.error('No changes made');
           return;
@@ -111,6 +147,18 @@ function TodoModal({ type, modalOpen, setModalOpen, todo }) {
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)} // Update the state for due date
               />
+            </label>
+            <label htmlFor="priority">
+              Priority
+              <select
+                id="priority"
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+              >
+                <option value="HIGH">HIGH</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="LOW">LOW</option>
+              </select>
             </label>
 
             <div classsName={styles.buttonContainer}>
