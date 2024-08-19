@@ -12,14 +12,12 @@ public class Task {
     private int id;
     private String text;
     private String dueDate;
-    private boolean flag;
+    private String status;
     private String doneDate;
     private Priority priority;
     private String creationDate;
 
-    public boolean getFlag() {
-        return this.flag;
-    }
+
 
     public enum Priority{
         HIGH,
